@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'book_list_screen.dart'; // ייבוא של מסך רשימת הספרים כדי שנוכל לנווט אליו
+import 'book_list_screen.dart'; 
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -20,7 +20,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 30),
               
-              // כותרות טורים - אייקונים של Word ו-PDF
+              // Word and PDF format icons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -30,7 +30,6 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               
-              // רשת הגילאים
               Expanded(
                 child: GridView.count(
                   crossAxisCount: 2,

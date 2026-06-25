@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // הוספנו את זה
+import 'package:cloud_firestore/cloud_firestore.dart'; 
  
 class BookListScreen extends StatelessWidget {
   final String ageGroup;
@@ -28,20 +28,18 @@ class BookListScreen extends StatelessWidget {
       body: Column(
         children: [
           Expanded(
-            // StreamBuilder מאזין בזמן אמת לשינויים במסד הנתונים
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('books')
-                  .where('ageGroup', isEqualTo: ageGroup) // סינון לפי גיל
-                  .where('format', isEqualTo: format)     // סינון לפי פורמט
+                  .where('ageGroup', isEqualTo: ageGroup) // sort by age group
+                  .where('format', isEqualTo: format)     // filter by format
                   .snapshots(),
               builder: (context, snapshot) {
-                // מצב 1: טעינה מהשרת
+                // Loading state
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
- 
-                // מצב 2: שגיאה או שאין נתונים
+                // Error state
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Text(
@@ -51,24 +49,21 @@ class BookListScreen extends StatelessWidget {
                   );
                 }
  
-                // מצב 3: הנתונים הגיעו בהצלחה - בונים את הרשימה
+                // Success state: data received successfully - building the list
                 final books = snapshot.data!.docs;
  
                 return ListView.builder(
                   padding: const EdgeInsets.all(16.0),
                   itemCount: books.length,
                   itemBuilder: (context, index) {
-                    // שולפים את השדות מתוך המסמך ב-Firebase
                     var bookData = books[index].data() as Map<String, dynamic>;
                     String bookTitle = bookData['title'] ?? 'Unknown Book';
-                    // לצורך הדוגמה, נגדיר שחלקם כבר מורדים וחלקם לא
-                    // בהמשך תוכלי לנהל את זה לפי קובץ מקומי במכשיר
                     bool isDownloaded = index % 2 == 0;
  
                     return Column(
                       children: [
                         BookListItem(
-                          bookName: bookTitle, // השם מהמסד נתונים יופיע כאן!
+                          bookName: bookTitle, 
                           isAlreadyDownloaded: isDownloaded,
                         ),
                         const Divider(),
@@ -79,12 +74,11 @@ class BookListScreen extends StatelessWidget {
               },
             ),
           ),
-          // כפתור העלאת ספר
           Padding(
             padding: const EdgeInsets.only(bottom: 30.0),
             child: ElevatedButton(
               onPressed: () {
-                // בעתיד נוכל לחבר לכאן לוגיקה שמוסיפה ספרים למסד הנתונים
+                //Add book upload functionality
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: themeColor,
@@ -102,7 +96,6 @@ class BookListScreen extends StatelessWidget {
   }
 }
 
-// ווידג'ט לשורת ספר בודד
 class BookListItem extends StatefulWidget {
   final String bookName;
   final bool isAlreadyDownloaded;
@@ -125,20 +118,14 @@ class _BookListItemState extends State<BookListItem> {
 
   void _handleButtonPress() async {
     if (buttonState == 0) {
-      // מעבר לטעינה
       setState(() {
         buttonState = 1; 
       });
-      
-      // סימולציה של זמן הורדה
       await Future.delayed(const Duration(seconds: 2));
-      
-      // מעבר למצב OPEN
       setState(() {
         buttonState = 2; 
       });
     } else if (buttonState == 2) {
-      // פתיחת הספר
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Opening ${widget.bookName}...')),
       );
