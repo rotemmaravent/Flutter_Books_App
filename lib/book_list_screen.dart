@@ -5,12 +5,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider_android/path_provider_android.dart';
 import 'package:android_intent_plus/android_intent.dart';
 
+const _navy = Color(0xFF2D3250);
+const _coral = Color(0xFFFF7B5E);
+
 class BookListScreen extends StatelessWidget {
   final String ageGroup;
   final String format;
   final Color themeColor;
 
-  const BookListScreen({Key? key, required this.ageGroup, required this.format, required this.themeColor}) : super(key: key);
+  const BookListScreen({
+    Key? key,
+    required this.ageGroup,
+    required this.format,
+    required this.themeColor,
+  }) : super(key: key);
 
   String _assetPath(String title) {
     final ext = format == 'PDF' ? 'pdf' : 'docx';
@@ -31,15 +39,48 @@ class BookListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Ages $ageGroup'),
-        backgroundColor: themeColor,
+        backgroundColor: const Color(0xFFFFF8F0),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _navy),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ages $ageGroup',
+              style: const TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: _navy,
+              ),
+            ),
+            Text(
+              format,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: _navy.withValues(alpha: 0.45),
+              ),
+            ),
+          ],
+        ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: themeColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(
-              format == 'PDF' ? Icons.picture_as_pdf : Icons.description,
-              size: 35,
-              color: format == 'PDF' ? const Color.fromARGB(255, 243, 7, 31) : const Color.fromARGB(255, 5, 135, 241),
+              format == 'PDF' ? Icons.picture_as_pdf_rounded : Icons.description_rounded,
+              size: 22,
+              color: themeColor,
             ),
           ),
         ],
@@ -55,40 +96,60 @@ class BookListScreen extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator(color: _coral),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
-                    child: Text(
-                      'No books found for Ages $ageGroup ($format)',
-                      style: const TextStyle(fontSize: 18),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('📭', style: TextStyle(fontSize: 48)),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No books yet',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _navy,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Ages $ageGroup · $format',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 14,
+                            color: _navy.withValues(alpha: 0.4),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }
 
                 final books = snapshot.data!.docs;
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16.0),
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                   itemCount: books.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    var bookData = books[index].data() as Map<String, dynamic>;
-                    String bookTitle = bookData['title'] ?? 'Unknown Book';
-                    String assetPath = _assetPath(bookTitle);
+                    final bookData = books[index].data() as Map<String, dynamic>;
+                    final bookTitle = bookData['title'] as String? ?? 'Unknown Book';
+                    final assetPath = _assetPath(bookTitle);
 
                     return FutureBuilder<bool>(
                       future: _assetExists(assetPath),
                       builder: (context, snap) {
                         final isAvailable = snap.data ?? false;
-                        return Column(
-                          children: [
-                            BookListItem(
-                              bookName: bookTitle,
-                              assetPath: assetPath,
-                              isAvailable: isAvailable,
-                            ),
-                            const Divider(),
-                          ],
+                        return BookListItem(
+                          bookName: bookTitle,
+                          assetPath: assetPath,
+                          isAvailable: isAvailable,
+                          accentColor: themeColor,
                         );
                       },
                     );
@@ -98,18 +159,16 @@ class BookListScreen extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 30.0),
-            child: ElevatedButton(
-              onPressed: () {
-                //Add book upload functionality
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: themeColor,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-              ),
-              child: const Text(
-                'Upload Book',
-                style: TextStyle(fontSize: 20, color: Colors.black),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  // Add book upload functionality
+                },
+                icon: const Icon(Icons.upload_rounded, size: 20),
+                label: const Text('Upload Book'),
               ),
             ),
           ),
@@ -123,8 +182,15 @@ class BookListItem extends StatefulWidget {
   final String bookName;
   final String assetPath;
   final bool isAvailable;
+  final Color accentColor;
 
-  const BookListItem({super.key, required this.bookName, required this.assetPath, required this.isAvailable});
+  const BookListItem({
+    super.key,
+    required this.bookName,
+    required this.assetPath,
+    required this.isAvailable,
+    required this.accentColor,
+  });
 
   @override
   State<BookListItem> createState() => _BookListItemState();
@@ -139,14 +205,15 @@ class _BookListItemState extends State<BookListItem> {
       final bytes = await rootBundle.load(widget.assetPath);
       final tempPath = await PathProviderAndroid().getTemporaryPath();
       final dir = Directory(tempPath!);
-      final file = File('${dir.path}/${widget.bookName}${widget.assetPath.substring(widget.assetPath.lastIndexOf('.'))}');
+      final ext = widget.assetPath.substring(widget.assetPath.lastIndexOf('.'));
+      final file = File('${dir.path}/${widget.bookName}$ext');
       await file.writeAsBytes(bytes.buffer.asUint8List());
       final filename = file.path.split('/').last;
       final intent = AndroidIntent(
         action: 'action_view',
         data: 'content://com.example.booksapp.fileprovider/cache/$filename',
         type: widget.assetPath.endsWith('.pdf') ? 'application/pdf' : 'application/msword',
-        flags: [0x00000001], // FLAG_GRANT_READ_URI_PERMISSION
+        flags: [0x00000001],
       );
       await intent.launch();
     } catch (e) {
@@ -162,48 +229,91 @@ class _BookListItemState extends State<BookListItem> {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Colors.redAccent, Colors.blueAccent],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(Icons.ac_unit, color: Colors.white),
+        ],
       ),
-      title: Text(
-        widget.bookName,
-        style: const TextStyle(fontSize: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 72,
+            decoration: BoxDecoration(
+              color: widget.accentColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: widget.accentColor.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text('📖', style: TextStyle(fontSize: 22)),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              widget.bookName,
+              style: const TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: _navy,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 12),
+          _buildButton(),
+          const SizedBox(width: 14),
+        ],
       ),
-      trailing: _buildTrailingButton(),
     );
   }
 
-  Widget _buildTrailingButton() {
+  Widget _buildButton() {
     if (_loading) {
       return const SizedBox(
-        width: 30,
-        height: 30,
-        child: CircularProgressIndicator(),
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2, color: _coral),
       );
     }
 
-    return ElevatedButton(
-      onPressed: widget.isAvailable ? _openBook : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.grey[200],
-        foregroundColor: widget.isAvailable ? Colors.blue : Colors.blue,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+    return SizedBox(
+      height: 36,
+      child: ElevatedButton(
+        onPressed: widget.isAvailable ? _openBook : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: widget.isAvailable ? _coral : const Color(0xFFE8E8E8),
+          foregroundColor: widget.isAvailable ? Colors.white : _navy.withValues(alpha: 0.35),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          textStyle: const TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
         ),
-      ),
-      child: Text(
-        widget.isAvailable ? 'OPEN' : 'GET',
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        child: Text(widget.isAvailable ? 'OPEN' : 'GET'),
       ),
     );
   }
